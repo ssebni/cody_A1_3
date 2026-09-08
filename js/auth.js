@@ -77,3 +77,37 @@ logout.addEventListener('click', async () => {
   }
 });
 initialize();
+
+// ============================================
+// 초대 기반 회원가입 처리 (invite signup)
+// ============================================
+async function handleInviteSignup() {
+  const email = document.getElementById('invite-email').value.trim();
+  const password = document.getElementById('invite-password').value;
+  const code = document.getElementById('invite-code').value.trim();
+  if (!email || !password || !code) {
+    alert('이메일, 비밀번호, 초대 코드를 모두 입력하세요.');
+    return;
+  }
+  const res = await fetch('/api/verify_invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, invitation_code: code }),
+  });
+  const data = await res.json();
+  if (data.ok) {
+    const { data: signInData } = await client.auth.signInWithPassword({ email, password });
+    if (signInData?.session) {
+      showSession(signInData.session);
+      status.textContent = '초대 가입 완료 및 로그인되었습니다.';
+    } else {
+      status.textContent = '초대 가입 완료! 로그인 상태를 확인하세요.';
+    }
+  } else {
+    status.textContent = '초대 코드가 유효하지 않거나 사용이 만료되었습니다.';
+  }
+}
+document.getElementById('invite-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  await handleInviteSignup();
+});
