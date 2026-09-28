@@ -4,6 +4,8 @@
 
 **배포 URL: 아직 확인되지 않음.** 로컬 구현과 자동 테스트를 완료했으며 실제 Supabase 마이그레이션 적용, 실제 AI 호출, Vercel 배포 검증은 대기 중입니다. 과제 제출 완료 상태는 아닙니다.
 
+개발 브랜치: [codex/naechinso-service](https://github.com/ssebni/cody_A1_3/tree/codex/naechinso-service). 구현과 테스트 코드는 이 브랜치에 업로드했습니다.
+
 ## 구현 내용
 
 - 초대 코드 가입·로그인·로그아웃, 서버 토큰 및 활성 회원 확인
@@ -115,4 +117,4 @@ npm run test:browser
 - [스크린샷 설명](docs/evidence/README.md): 로컬 화면 및 **모의 응답** UI 캡처
 - [AI 코딩 도구 사용 기록](docs/ai-coding-log.md): 실제 작업 요약. 이 대화의 공유 링크 또는 스크린샷을 추가해 제출
 
-남은 항목: 실제 배포 URL, 호스팅 DB 적용·인증·동시성 검증, 실제 AI 성공 캡처, GitHub 업데이트, 원본 대화 증빙. 모의 AI 캡처를 실제 API 동작 증빙으로 제출하면 안 됩니다.
+남은 항목: 실제 배포 URL, 호스팅 DB 적용·인증·동시성 검증, 실제 AI 성공 캡처, 원본 대화 증빙. 모의 AI 캡처를 실제 API 동작 증빙으로 제출하면 안 됩니다.
