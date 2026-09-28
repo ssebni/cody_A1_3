@@ -1,3 +1,5 @@
+> 이 문서는 초기 설정 기록입니다. 현재 실행 순서는 [최신 설정·배포 안내](setup-and-deploy.md)를 따르세요. 기존 DB에는 002_service_functions.sql 추가 적용이 필요합니다.
+
 # Supabase 초기 설정
 
 1. 내친소 프로젝트의 SQL Editor에서 새 쿼리를 엽니다.

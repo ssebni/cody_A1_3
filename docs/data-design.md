@@ -1,38 +1,50 @@
-# 데이터 및 API 설계 초안
+# 데이터·API 설계
 
-영구 저장소는 관계형 DB를 사용한다. 인증 제공자 및 DB 제품은 구현 단계에서 선택한다. 비밀번호 인증은 직접 구현하지 않고 검증된 인증 서비스를 사용한다. 프론트는 순수 HTML/CSS/JS, 서버는 api/ 아래 Python 함수로 구성한다.
+## 데이터
 
-## 데이터 모델
-| 테이블 | 주요 필드 | 규칙 |
-|---|---|---|
-| members | id, auth_subject, display_name, invited_by, created_at | invited_by는 members.id 참조, 가입 후 변경 금지, 최초 회원만 NULL |
-| invitations | id, code_hash, inviter_id, expires_at, used_by, used_at | 코드 원문 대신 해시 저장, 1회 사용, 충분히 무작위인 코드 |
-| profiles | id, owner_id, author_id, nickname, age_band, region, hobbies, introduction, status, approved_at | 상태 draft/pending/published/hidden, 공개 결정은 owner만 가능 |
-| matches | id, requester_id, recipient_id, status, created_at, updated_at | pending/accepted/declined/cancelled, 본인 요청 금지, 회원 쌍별 진행 중 중복 금지 |
-| contact_shares | member_id, contact_method, contact_value | 프로필 탐색 응답에 포함하지 않음, 수락된 상대에게만 반환 |
+`001_initial_schema.sql`은 members/invitations/profiles/matches 초기 스키마입니다.
+`002_service_functions.sql`은 회원 성인 확인 시각, contact_shares, usage_limits 및 서비스 RPC를 추가합니다.
 
-실제 지인의 프로필 초안은 초대 건에 연결하고, 가입 완료 후 서버가 owner_id를 지정한다. 연결 전 초안을 지원하려면 profiles에 invitation_id 참조를 두고 owner_id는 가입 전 NULL을 허용한다. 초대한 사람이라고 타인의 기존 프로필 소유권을 임의로 지정할 수 없다.
-
-## 권한과 상태 전이
-- 초대 발급: 로그인 회원만. 만료/발급량 제한을 서버에서 검사.
-- 공개: 본인이 승인한 버전만 공개. 승인 이후 주선자 수정은 별도 초안으로 두거나 비공개 전환 후 재승인.
-- 매칭: 요청자는 취소, 수신자는 수락/거절. 상태 변경은 pending일 때만 원자적으로 처리.
-- 클라이언트가 보낸 사용자 ID를 인증 근거로 쓰지 않는다. 인증 세션에서 요청자를 확정한다.
-
-## 관계 거리
-members.invited_by를 양방향 간선으로 해석한다. 서버에서 BFS로 최단 연결 수를 계산한다. 자신은 0촌, 직접 초대 연결은 1촌, 경로가 없으면 null이다. 공개 응답은 숫자만 반환하며 중간 회원 정보를 보내지 않는다. 거리 계산의 그래프에는 비공개 프로필 회원도 포함하지만 그 신원은 노출하지 않는다. 탈퇴 시 관계 보존 여부와 동의 정책은 실제 운영 전에 확정한다.
-
-## API 계약(구현 예정)
-| 메서드·경로 | 기능 |
+| 데이터 | 규칙 |
 |---|---|
-| POST /api/invitations | 1회용 코드 발급 |
-| POST /api/join | 인증된 신규 계정과 초대 코드 결합 |
-| GET /api/profiles | 공개 프로필과 요청자 기준 촌수 반환 |
-| POST /api/profile | 프로필 초안 저장 |
-| POST /api/profile-approval | 본인의 프로필 공개/숨김 |
-| POST /api/matches | 매칭 요청 |
-| GET /api/matches | 본인에게 관련된 요청만 반환 |
-| POST /api/match-response | 수락/거절/취소 |
-| POST /api/introduction | { notes } → { introduction } |
+| members | Supabase Auth UUID와 연결. active 회원만 기능 사용. invited_by로 초대 관계 보존 |
+| invitations | 코드 SHA-256 해시, 30일 만료, 1회 사용, 지인 가입 전 프로필 작성 |
+| profiles | 초대 하나당 하나, 가입 후 owner_id 연결. 작성자는 수정, 소유자는 공개 승인 |
+| matches | pending→accepted/declined/cancelled. 본인 요청 금지, 진행 중인 두 회원 쌍은 유일 |
+| contact_shares | 회원별 연락 방법. 본인과 수락 완료된 활성 상대에게만 반환 |
+| usage_limits | 회원·기능·UTC 날짜별 시도 횟수와 최종 시각, 원자적 증가 |
 
-공통 오류는 { error: { code, message } } 형태. 400 입력 오류, 401 미인증, 403 권한 없음, 409 중복/상태 충돌, 429 호출 제한, 502 외부 API 실패, 504 시간 초과. 개인정보 포함 응답은 캐시를 제한한다. 인증 방식 확정 후 CSRF 방어와 쿠키 속성을 설정한다.
+## 접근 권한과 트랜잭션
+
+모든 테이블은 RLS 활성, anon/authenticated 직접 접근 금지입니다. RPC 실행도 service_role만 허용합니다. Python이 Bearer 토큰을 Supabase Auth에 보내 사용자 UUID를 확인하고 활성 회원을 조회합니다. 클라이언트가 전달한 작성자 ID는 허용하지 않습니다.
+
+`finish_join`은 초대 행을 `FOR UPDATE`로 잠그고 유효성 검사·회원 생성·초대 소진·프로필 소유자 연결을 한 트랜잭션으로 처리합니다. Supabase Auth 계정 생성은 외부 단계라 같은 트랜잭션이 아닙니다. SQL이 명확하게 거부하면 생성한 Auth 계정을 삭제하고, 응답 시간 초과처럼 커밋 여부가 모호하면 삭제하지 않고 운영자 확인용 UUID만 기록합니다.
+
+공개 승인과 작성자 수정은 같은 프로필 행을 잠급니다. 승인 시 화면에서 읽은 updated_at과 DB 버전을 비교하므로 최신 내용을 읽지 않고 승인할 수 없습니다. 수정은 승인 시각을 지우고 pending/draft로 전환합니다.
+
+매칭은 공개 프로필과 저장된 연락 방법을 확인합니다. 요청은 요청자의 공유 동의, 수락은 수신자의 공유 동의입니다. 중복 쌍은 DB unique index, 상태 전이는 행 잠금으로 보호합니다. 공개 프로필 잠금은 ID 순으로 수행합니다. 이미 accepted인 매칭은 일방의 이후 프로필 숨김으로 취소되지 않으며 동의한 상대와 연락처 공유를 유지합니다. 회원 정지 시에는 상대의 연락처 조회에서 정지된 회원 연락처를 제외합니다.
+
+## API
+
+| 메서드·경로 | 입력·출력 |
+|---|---|
+| POST /api/verify_invite | email/password/display_name/invitation_code/adult_confirmed → ok; 공개 엔드포인트 |
+| GET /api/state | 본인 정보, 공개 프로필과 촌수, 내 프로필, 작성 프로필, 초대 상태, 관련 매칭, 내 연락처 |
+| POST /api/invitations | {} → id/code/expires_at (원문은 이때만 반환) |
+| POST /api/profile | id 또는 invitation_id, nickname/age_band/region/hobbies/introduction → id |
+| POST /api/profile-approval | id/publish/version → ok |
+| POST /api/contact | contact_value → ok |
+| POST /api/matches | recipient_id → id |
+| POST /api/match-response | id/status(accepted/declined/cancelled) → ok |
+| POST /api/introduction | notes(20~1000자) → introduction |
+| GET /api/health | ok; 공개 상태 확인 |
+
+공통 오류는 `{ "error": { "code": "...", "message": "한국어 안내" } }`입니다.
+400 입력, 401 로그인, 403 권한, 409 상태 충돌, 413 큰 요청, 429 제한, 502 외부 실패, 503 설정/DB 실패, 504 시간 초과.
+API 응답에는 `Cache-Control: no-store`를 설정합니다. 인증은 Authorization 헤더이고 API에 인증 쿠키를 쓰지 않습니다. CORS 허용을 추가하지 않아 타 출처에서 인증 API를 호출할 수 없습니다.
+
+## 관계 거리와 AI
+
+초대 관계는 방향 없는 그래프로 계산합니다. Python BFS가 로그인 회원에서 최단 거리를 구한 뒤 숫자만 반환합니다. 중간 회원 ID, 이름, 초대 ID는 공개 프로필 응답에서 제거합니다. 연결이 없으면 distance=null입니다.
+
+OpenAI Responses API에 메모와 작성 지침을 전달합니다. `store=false`, 출력 토큰 상한 800, 제공자 요청 시간 제한 25초입니다. 생성 완료 상태와 텍스트 유무를 확인하고 불완전 응답은 오류로 반환합니다. 소개글은 화면에서 수정 가능하고 자동 저장/공개하지 않습니다. 입력 길이는 서버에서도 검사합니다.

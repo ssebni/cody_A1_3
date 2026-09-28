@@ -4,3 +4,8 @@
 __pycache__/
 .vercel/
 node_modules/
+.venv/
+.venv-win/
+.pytest_cache/
+.DS_Store
+test-results/

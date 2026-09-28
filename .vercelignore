@@ -1,0 +1,9 @@
+.venv
+.venv-win
+.env
+.env.*
+.git
+.pytest_cache
+test-results
+tests
+docs

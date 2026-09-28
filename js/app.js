@@ -1,92 +1,278 @@
-'use strict';
-// 가상 회원 그래프. 실서비스에서는 서버가 인증된 회원 기준으로 계산한다.
-const members = [{ id: 'me', inviter: 'host' }, { id: 'host', inviter: null }, { id: 'a', inviter: 'host' }, { id: 'bridge', inviter: 'host' }, { id: 'b', inviter: 'bridge' }, { id: 'c', inviter: 'host' }];
-function distanceBetween(start, target) {
-  const queue = [[start, 0]], seen = new Set([start]);
-  for (let i = 0; i < queue.length; i++) {
-    const [id, depth] = queue[i];
-    if (id === target) return depth;
-    for (const person of members) {
-      const neighbor = person.id === id ? person.inviter : person.inviter === id ? person.id : null;
-      if (neighbor && !seen.has(neighbor)) { seen.add(neighbor); queue.push([neighbor, depth + 1]); }
-    }
-  }
-  return null;
+import { api, getSession, onSession } from './session.js';
+const $ = selector => document.querySelector(selector);
+let state = null, selected = null, epoch = 0, loadVersion = 0;
+let filter = 'all';
+const statusNames = { draft: '가입 대기', pending: '승인 대기', published: '공개 중', hidden: '비공개', accepted: '매칭 성사', declined: '거절됨', cancelled: '취소됨' };
+function el(tag, text, className) {
+  const node = document.createElement(tag);
+  if (text !== undefined) node.textContent = text;
+  if (className) node.className = className;
+  return node;
 }
-const profiles = [
-  { id: 'a', name: '윤슬', meta: '20대 후반 · 서울', emoji: '🌿', tone: '#e3e9db', tags: ['산책', '독립서점', '커피'], intro: '작은 일에도 즐거움을 찾는 친구예요. 함께 걸으면 평범한 골목도 특별해져요.' },
-  { id: 'b', name: '도담', meta: '30대 초반 · 경기', emoji: '🎧', tone: '#e9dfd2', tags: ['음악', '러닝', '요리'], intro: '좋은 음악과 직접 만든 음식을 나누는 걸 좋아해요. 늘 약속을 소중하게 생각해요.' },
-  { id: 'c', name: '여름', meta: '20대 후반 · 서울', emoji: '📷', tone: '#e1e6e9', tags: ['사진', '전시', '여행'], intro: '새로운 풍경을 발견하면 꼭 나누고 싶어 하는 친구예요. 이야기를 따뜻하게 들어줘요.' }
-];
-const sent = new Set();
-let selected = null;
-const dialog = document.querySelector('#profile-dialog');
-function render(filter = 'all') {
-  const container = document.querySelector('#profiles');
-  container.replaceChildren();
-  for (const profile of profiles) {
-    const distance = distanceBetween('me', profile.id);
-    if (filter !== 'all' && distance !== Number(filter)) continue;
-    const card = document.createElement('article');
-    card.className = 'card';
-    // 아래 템플릿에는 코드에 정의된 가상 데이터만 사용한다.
-    card.innerHTML = `<div class="portrait" style="--tone:${profile.tone}"><span class="distance">나와 ${distance}촌</span><span aria-hidden="true">${profile.emoji}</span></div><div class="card-body"><h3>${profile.name}</h3><p class="meta">${profile.meta} · 가상 프로필</p><p class="quote">“${profile.intro}”</p><div class="tags">${profile.tags.map(tag => `<span>${tag}</span>`).join('')}</div><button class="detail-button">${profile.name}님 소개 보기 ↗</button></div>`;
-    card.querySelector('button').addEventListener('click', () => {
+function button(text, callback, className = 'secondary') {
+  const node = el('button', text, className);
+  node.type = 'button';
+  node.addEventListener('click', () => callback(node));
+  return node;
+}
+function empty(target, message) { target.replaceChildren(el('p', message, 'muted')); }
+function distanceText(value) { return value === null ? '연결된 초대 관계 없음' : `나와 ${value}촌`; }
+function description(profile, target) {
+  target.append(el('h3', profile.nickname), el('p', `${profile.age_band} · ${profile.region}`, 'meta'), el('p', profile.introduction, 'quote'));
+  const tags = el('div', undefined, 'tags');
+  profile.hobbies.forEach(hobby => tags.append(el('span', hobby)));
+  target.append(tags);
+}
+async function perform(control, status, work) {
+  if (control.disabled) return;
+  const current = epoch;
+  control.disabled = true;
+  control.setAttribute('aria-busy', 'true');
+  status.textContent = '처리하고 있습니다…';
+  try { await work(() => current === epoch); }
+  catch (error) { if (current === epoch) status.textContent = error.message; }
+  finally { control.disabled = false; control.removeAttribute('aria-busy'); }
+}
+async function refresh() {
+  const current = epoch, version = ++loadVersion;
+  $('#data-status').textContent = '회원 정보를 불러오고 있습니다…';
+  try {
+    const data = await api('/api/state');
+    if (current !== epoch || version !== loadVersion) return;
+    state = data;
+    renderAll();
+    $('#data-status').textContent = '';
+  } catch (error) {
+    if (current !== epoch || version !== loadVersion) return;
+    state = null;
+    clearData();
+    $('#data-status').textContent = error.message + ' 위의 새로고침으로 다시 불러올 수 있습니다.';
+  }
+}
+function clearData() {
+  ['profiles', 'requests', 'received-requests', 'own-profile', 'authored-profiles', 'invitation-list'].forEach(id => empty(document.getElementById(id), '회원 정보를 불러온 뒤 표시됩니다.'));
+  $('#contact-value').value = '';
+  $('#request-count').textContent = '0';
+  $('#profile-invitation').replaceChildren(new Option('초대 코드를 먼저 발급하세요', ''));
+}
+onSession(session => {
+  epoch++;
+  state = null;
+  selected = null;
+  $('#profile-dialog').close();
+  clearData();
+  ['profile-form','intro-form','contact-form'].forEach(id => document.getElementById(id).reset());
+  resetProfile();
+  $('#ai-result').value = '';
+  $('#ai-result-panel').hidden = true;
+  $('#new-invite').hidden = true;
+  $('#my-invite-code').textContent = '';
+  ['profile-status','intro-status','invitation-status','contact-status','approval-status','global-status','data-status'].forEach(id => { document.getElementById(id).textContent = ''; });
+  if (session) refresh();
+});
+$('#refresh-data').addEventListener('click', refresh);
+function renderProfiles() {
+  const target = $('#profiles');
+  target.replaceChildren();
+  for (const profile of state?.profiles || []) {
+    if (filter !== 'all' && profile.distance !== Number(filter)) continue;
+    const card = el('article', undefined, 'card');
+    const portrait = el('div', undefined, 'portrait');
+    portrait.style.setProperty('--tone', '#e3e9db');
+    portrait.append(el('span', distanceText(profile.distance), 'distance'), el('span', '🌿'));
+    const body = el('div', undefined, 'card-body');
+    description(profile, body);
+    body.append(button(`${profile.nickname}님 소개 보기 ↗`, () => {
       selected = profile;
-      document.querySelector('#detail').replaceChildren();
-      const title = document.createElement('h2'); title.textContent = profile.name;
-      const meta = document.createElement('p'); meta.textContent = `${profile.meta} · 나와 ${distance}촌 (초대 연결 기준)`;
-      const intro = document.createElement('p'); intro.textContent = profile.intro;
-      document.querySelector('#detail').append(title, meta, intro);
-      const button = document.querySelector('#match-button'); button.disabled = sent.has(profile.id); button.textContent = sent.has(profile.id) ? '체험 요청 완료' : '매칭 요청 체험하기';
-      dialog.showModal();
-    });
-    container.append(card);
+      $('#detail').replaceChildren();
+      description(profile, $('#detail'));
+      $('#detail').append(el('p', distanceText(profile.distance), 'muted'));
+      $('#match-status').textContent = '';
+      const existing = state.matches.some(m => m.other_id === profile.owner_id && ['pending','accepted'].includes(m.status));
+      $('#match-button').disabled = existing;
+      $('#match-button').textContent = existing ? '이미 진행 중인 매칭입니다' : '연락처 공유에 동의하고 매칭 요청';
+      $('#profile-dialog').showModal();
+    }, 'detail-button'));
+    card.append(portrait, body);
+    target.append(card);
   }
+  if (!target.children.length) empty(target, '아직 이 조건에 맞는 공개 프로필이 없어요. 지인을 초대하고 소개를 준비해 보세요.');
 }
-document.querySelectorAll('[data-distance]').forEach(button => button.addEventListener('click', () => {
-  document.querySelectorAll('[data-distance]').forEach(item => { item.classList.toggle('active', item === button); item.setAttribute('aria-pressed', String(item === button)); });
-  render(button.dataset.distance);
+document.querySelectorAll('[data-distance]').forEach(control => control.addEventListener('click', () => {
+  filter = control.dataset.distance;
+  document.querySelectorAll('[data-distance]').forEach(other => {
+    other.classList.toggle('active', control === other);
+    other.setAttribute('aria-pressed', String(control === other));
+  });
+  renderProfiles();
 }));
-document.querySelector('#close-dialog').addEventListener('click', () => dialog.close());
-document.querySelector('#match-button').addEventListener('click', () => {
-  if (!selected || sent.has(selected.id)) return;
-  sent.add(selected.id);
-  document.querySelector('#empty-request')?.remove();
-  const li = document.createElement('li'); li.textContent = `${selected.name} · 매칭 요청 체험 완료 (전송되지 않음)`;
-  document.querySelector('#requests').append(li);
-  document.querySelector('#request-count').textContent = sent.size;
-  document.querySelector('#match-button').disabled = true;
-  document.querySelector('#match-button').textContent = '체험 요청 완료';
+$('#close-dialog').addEventListener('click', () => $('#profile-dialog').close());
+$('#match-button').addEventListener('click', () => {
+  if (!selected) return;
+  const recipient = selected.owner_id;
+  perform($('#match-button'), $('#match-status'), async alive => {
+    await api('/api/matches', { body: { recipient_id: recipient } });
+    if (!alive()) return;
+    $('#profile-dialog').close();
+    $('#global-status').textContent = '매칭 요청을 보냈습니다. 마이페이지에서 진행 상황을 확인하세요.';
+    await refresh();
+  });
 });
-document.querySelector('#intro-form').addEventListener('submit', event => {
-  event.preventDefault();
-  const notes = document.querySelector('#notes').value.trim();
-  document.querySelector('#intro-status').textContent = notes.length < 20 || notes.length > 1000 ? '공백을 제외한 앞뒤 내용을 기준으로 20~1,000자를 입력해 주세요.' : '입력 형식을 확인했습니다. 실제 AI 소개글 생성은 백엔드 연결 후 사용할 수 있습니다.';
-});
-render();
-// 역할 전환은 화면 구분이며 서버의 접근 권한과는 별개다.
-const dashboardTabs = [...document.querySelectorAll('[role="tab"]')];
-function activateDashboard(tab) {
-  dashboardTabs.forEach(item => {
-    const active = item === tab;
-    item.setAttribute('aria-selected', String(active));
-    item.tabIndex = active ? 0 : -1;
-    item.classList.toggle('active', active);
-    document.getElementById(item.getAttribute('aria-controls')).hidden = !active;
+function renderMatches(outgoing, target) {
+  target.replaceChildren();
+  const rows = state.matches.filter(m => m.outgoing === outgoing);
+  if (!rows.length) return empty(target, outgoing ? '아직 보낸 요청이 없습니다.' : '아직 받은 요청이 없습니다.');
+  rows.forEach(match => {
+    const item = el('div', undefined, 'list-item');
+    item.append(el('strong', match.name), el('p', match.status === 'pending' ? '응답 대기' : statusNames[match.status], 'meta'));
+    if (match.contact) item.append(el('p', `공유된 연락 방법: ${match.contact}`, 'contact-shared'));
+    const status = el('p', '', 'inline-status'); status.setAttribute('role','status');
+    if (match.status === 'pending') {
+      const actions = el('div', undefined, 'actions');
+      const choices = outgoing ? [['cancelled','요청 취소']] : [['accepted','연락처 공유에 동의하고 수락'],['declined','거절']];
+      choices.forEach(([next, label]) => actions.append(button(label, control => perform(control, status, async alive => {
+        await api('/api/match-response', { body: { id: match.id, status: next } });
+        if (!alive()) return;
+        status.textContent = '처리되었습니다.';
+        await refresh();
+      }))));
+      item.append(actions);
+    }
+    item.append(status); target.append(item);
   });
 }
-dashboardTabs.forEach((tab, index) => {
-  tab.addEventListener('click', () => activateDashboard(tab));
+function renderAll() {
+  renderProfiles();
+  renderMatches(true, $('#requests'));
+  renderMatches(false, $('#received-requests'));
+  $('#request-count').textContent = state.matches.filter(m => m.outgoing).length;
+  if (document.activeElement !== $('#contact-value')) $('#contact-value').value = state.contact || '';
+  const own = $('#own-profile'); own.replaceChildren();
+  const profile = state.own_profile;
+  if (!profile) empty(own, '아직 연결된 프로필이 없습니다. 주선자가 프로필을 연결한 초대 코드로 가입해야 내 소개가 나타납니다.');
+  else {
+    description(profile, own);
+    own.append(el('p', statusNames[profile.status], 'pill'));
+    const publish = profile.status !== 'published';
+    own.append(button(publish ? '이 내용을 확인하고 공개 승인' : '내 프로필 비공개로 전환', control => perform(control, $('#approval-status'), async alive => {
+      await api('/api/profile-approval', { body: { id: profile.id, publish, version: profile.updated_at } });
+      if (!alive()) return;
+      $('#approval-status').textContent = publish ? '공개 승인했습니다.' : '비공개로 전환했습니다.';
+      await refresh();
+    })));
+  }
+  const authored = $('#authored-profiles'); authored.replaceChildren();
+  state.authored.forEach(profile => {
+    const item = el('div', undefined, 'list-item');
+    item.append(el('strong', profile.nickname), el('p', statusNames[profile.status], 'meta'), button('소개 수정하기', () => editProfile(profile)));
+    authored.append(item);
+  });
+  if (!state.authored.length) empty(authored, '아직 소개한 지인이 없습니다. 초대 코드를 발급하고 첫 소개를 준비해 보세요.');
+  const invitations = $('#invitation-list'); invitations.replaceChildren();
+  state.invitations.forEach(invite => {
+    const expired = Date.parse(invite.expires_at) <= Date.now();
+    invitations.append(el('p', `${invite.id.slice(0,8)} · ${invite.used ? '가입 완료' : expired ? '만료' : '가입 대기'} · ${new Date(invite.expires_at).toLocaleDateString('ko-KR')} 만료`, 'meta'));
+  });
+  if (!state.invitations.length) empty(invitations, '발급한 초대가 없습니다.');
+  if (!$('#profile-id').value) renderInviteOptions();
+}
+function renderInviteOptions(preferred) {
+  const select = $('#profile-invitation'), previous = preferred || select.value;
+  select.replaceChildren(new Option('초대를 선택하세요', ''));
+  (state?.invitations || []).filter(i => !i.used && !i.has_profile && Date.parse(i.expires_at) > Date.now()).forEach(i => select.add(new Option(`${i.id.slice(0,8)} · ${new Date(i.expires_at).toLocaleDateString('ko-KR')} 만료`, i.id)));
+  if ([...select.options].some(option => option.value === previous)) select.value = previous;
+}
+function resetProfile() {
+  $('#profile-form').reset();
+  $('#profile-id').value = '';
+  $('#profile-invitation').disabled = false;
+  $('#profile-invitation').required = true;
+  renderInviteOptions();
+}
+function editProfile(profile) {
+  $('#profile-id').value = profile.id;
+  $('#profile-invitation').disabled = true;
+  $('#profile-invitation').required = false;
+  $('#profile-invitation').replaceChildren(new Option('기존 지인의 프로필 수정', ''));
+  for (const key of ['nickname','region','introduction']) $(`#profile-${key}`).value = profile[key];
+  const age = $('#profile-age');
+  if (![...age.options].some(option => option.value === profile.age_band)) age.add(new Option(profile.age_band, profile.age_band));
+  age.value = profile.age_band;
+  $('#profile-hobbies').value = profile.hobbies.join(', ');
+  $('#profile-status').textContent = '수정한 내용은 지인이 다시 승인해야 공개됩니다.';
+  location.hash = 'register';
+}
+$('#reset-profile').addEventListener('click', () => { resetProfile(); $('#profile-status').textContent = ''; });
+$('#profile-form').addEventListener('submit', event => {
+  event.preventDefault();
+  if (!event.target.reportValidity()) return;
+  const body = {
+    ...($('#profile-id').value ? { id: $('#profile-id').value } : { invitation_id: $('#profile-invitation').value }),
+    nickname: $('#profile-nickname').value.trim(), age_band: $('#profile-age').value, region: $('#profile-region').value.trim(),
+    hobbies: $('#profile-hobbies').value.split(',').map(s => s.trim()).filter(Boolean), introduction: $('#profile-introduction').value.trim()
+  };
+  perform(event.submitter, $('#profile-status'), async alive => {
+    await api('/api/profile', { body });
+    if (!alive()) return;
+    resetProfile();
+    $('#profile-status').textContent = '저장했습니다. 지인이 가입하고 내용을 승인하면 공개됩니다.';
+    await refresh();
+  });
+});
+$('#issue-invite').addEventListener('click', () => perform($('#issue-invite'), $('#invitation-status'), async alive => {
+  const result = await api('/api/invitations', { body: {} });
+  if (!alive()) return;
+  $('#my-invite-code').textContent = result.code;
+  $('#new-invite').hidden = false;
+  $('#invitation-status').textContent = '발급했습니다. 코드를 복사해서 보관하세요.';
+  await refresh();
+  if (alive() && !$('#profile-id').value) renderInviteOptions(result.id);
+}));
+$('#copy-invite-code').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#my-invite-code').textContent); $('#invitation-status').textContent = '초대 코드를 복사했습니다.'; }
+  catch { $('#invitation-status').textContent = '복사하지 못했습니다. 위의 코드를 직접 선택해 복사해 주세요.'; }
+});
+$('#contact-form').addEventListener('submit', event => {
+  event.preventDefault();
+  if (!event.target.reportValidity()) return;
+  perform(event.submitter, $('#contact-status'), async alive => {
+    await api('/api/contact', { body: { contact_value: $('#contact-value').value.trim() } });
+    if (alive()) { $('#contact-status').textContent = '저장했습니다. 매칭이 성사된 상대에게만 공개됩니다.'; await refresh(); }
+  });
+});
+$('#intro-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const notes = $('#notes').value.trim();
+  if (notes.length < 20 || notes.length > 1000) { $('#intro-status').textContent = '앞뒤 공백을 제외하고 20~1,000자를 입력해 주세요.'; return; }
+  perform(event.submitter, $('#intro-status'), async alive => {
+    $('#ai-result-panel').hidden = true;
+    $('#intro-status').textContent = '친구의 매력을 소개글로 다듬고 있어요. 최대 45초 정도 걸릴 수 있습니다…';
+    const result = await api('/api/introduction', { body: { notes } });
+    if (!alive()) return;
+    $('#ai-result').value = result.introduction;
+    $('#ai-result-panel').hidden = false;
+    $('#intro-status').textContent = '초안을 만들었습니다. 사실과 다른 내용이 없는지 확인하고 수정해 주세요.';
+  });
+});
+$('#use-intro').addEventListener('click', () => {
+  $('#profile-introduction').value = $('#ai-result').value;
+  location.hash = 'register';
+  $('#profile-introduction').focus();
+});
+const tabs = [...document.querySelectorAll('[role="tab"]')];
+function activate(tab) {
+  tabs.forEach(other => {
+    const active = tab === other;
+    other.setAttribute('aria-selected', String(active)); other.tabIndex = active ? 0 : -1;
+    other.classList.toggle('active', active);
+    document.getElementById(other.getAttribute('aria-controls')).hidden = !active;
+  });
+}
+tabs.forEach((tab,index) => {
+  tab.addEventListener('click', () => activate(tab));
   tab.addEventListener('keydown', event => {
-    let next;
-    if (event.key === 'ArrowRight') next = (index + 1) % dashboardTabs.length;
-    else if (event.key === 'ArrowLeft') next = (index - 1 + dashboardTabs.length) % dashboardTabs.length;
-    else if (event.key === 'Home') next = 0;
-    else if (event.key === 'End') next = dashboardTabs.length - 1;
-    else return;
-    event.preventDefault();
-    activateDashboard(dashboardTabs[next]);
-    dashboardTabs[next].focus();
+    const next = { ArrowRight: (index+1)%tabs.length, ArrowLeft: (index-1+tabs.length)%tabs.length, Home: 0, End: tabs.length-1 }[event.key];
+    if (next === undefined) return;
+    event.preventDefault(); activate(tabs[next]); tabs[next].focus();
   });
 });
