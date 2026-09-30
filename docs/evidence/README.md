@@ -12,5 +12,8 @@
 | ai-production.png | `introducemyfriend.vercel.app`에서 Gemini 소개글을 생성한 화면 | **실제 AI 동작 제출 증빙** |
 | desktop-production-home.png | 주소창이 보이는 프로덕션 데스크톱 홈 화면 | **최종 데스크톱 제출 증빙** |
 | mobile-production-home.png | 주소창이 보이는 프로덕션 모바일 홈 화면 | **최종 모바일·반응형 제출 증빙** |
+| codex-responsive-fix.png | 모바일 표시 문제를 발견하고 수정·테스트·배포한 Codex 대화 | **AI 코딩 도구 사용 증빙** |
+| codex-character-counter.png | 사용자 불편을 바탕으로 실시간 글자 수 기능을 구현한 Codex 대화 | **AI 코딩 도구 사용 증빙** |
+| codex-ai-verification.png | 배포 사이트의 실제 AI 생성 결과를 확인한 Codex 대화 | **AI 코딩 도구 사용 증빙** |
 
-프로덕션 URL은 `https://introducemyfriend.vercel.app`이며 공개 접속, 데스크톱·모바일 반응형 화면, 실제 AI 생성을 확인했습니다. 서비스 화면 증빙 1세트가 준비되었습니다. 모의 캡처는 실제 AI 성공의 증거로 사용하지 마세요.
+프로덕션 URL은 `https://introducemyfriend.vercel.app`이며 공개 접속, 데스크톱·모바일 반응형 화면, 실제 AI 생성을 확인했습니다. 서비스 화면과 AI 코딩 도구 사용 과정의 제출 증빙이 모두 준비되었습니다. 모의 캡처는 실제 AI 성공의 증거로 사용하지 마세요.
