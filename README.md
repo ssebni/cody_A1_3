@@ -116,7 +116,7 @@ npm run test:browser
 - [서비스 기획서](docs/service-plan.md)
 - [데이터·API 설계](docs/data-design.md)
 - [설정과 배포 안내](docs/setup-and-deploy.md)
-- [스크린샷 설명](docs/evidence/README.md): 로컬 화면 및 **모의 응답** UI 캡처
+- [스크린샷 설명](docs/evidence/README.md): 로컬 UI 캡처와 배포 환경의 **실제 AI 생성** 화면
 - [AI 코딩 도구 사용 기록](docs/ai-coding-log.md): 실제 작업 요약. 이 대화의 공유 링크 또는 스크린샷을 추가해 제출
 
-남은 제출 준비: 배포 환경 로그인·AI 생성 확인, 실제 데스크톱·모바일·AI 성공 캡처, 원본 대화 증빙. 모의 AI 캡처를 실제 API 동작 증빙으로 제출하면 안 됩니다.
+남은 제출 준비: 최종 데스크톱·모바일 화면과 원본 대화 증빙. 실제 AI 성공 화면은 `docs/evidence/ai-production.png`에 포함했습니다.
