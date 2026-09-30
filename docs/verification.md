@@ -8,7 +8,7 @@
 - Python 컴파일 및 JavaScript 구문 검사 통과.
 - 데스크톱·모바일 로그인·프로필 및 AI 테스트 화면 캡처를 직접 열어 레이아웃 확인.
 - 호스팅 Supabase에서 006의 당사자 수정 함수와 권한이 적용된 상태를 조회로 확인.
-- Vercel 프로덕션 URL `https://cody-a1-3-1feo.vercel.app`의 공개 로그인 화면과 `/api/health` 200, `ok=true` 확인.
+- Vercel 프로덕션 URL `https://introducemyfriend.vercel.app`의 공개 로그인 화면과 `/api/health` 200, `ok=true` 확인.
 
 API 테스트는 외부 HTTP를, 브라우저 테스트는 인증 SDK 및 서버 응답을 대체했습니다. DB 테스트는 실제 로컬 PostgreSQL 엔진을 사용하지만 Supabase 호스팅 환경은 아닙니다. 이 세 검증을 실제 서비스 종단 간 성공으로 간주하지 않습니다.
 
