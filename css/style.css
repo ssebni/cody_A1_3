@@ -121,7 +121,26 @@ h3 { margin-top: 0; }
 .me { left: 10%; top: 75px; }
 .friend { left: 42%; top: 25px; background: #f6dfbd; }
 .new { right: 9%; top: 154px; background: #dbe7d6; width: 120px; height: 120px; }
-.spark { position: absolute; right: 16%; top: 30px; font-size: 48px; color: #d79470; }
+.spark {
+  position: absolute;
+  right: 16%;
+  top: 38px;
+  width: 38px;
+  height: 38px;
+  color: #d79470;
+  background:
+    linear-gradient(45deg, transparent 46%, currentColor 46% 54%, transparent 54%),
+    linear-gradient(-45deg, transparent 46%, currentColor 46% 54%, transparent 54%);
+}
+.spark::before,
+.spark::after {
+  content: "";
+  position: absolute;
+  inset: 3px 17px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.spark::after { transform: rotate(90deg); }
 .connection > p { position: absolute; left: 12%; bottom: 25px; font-size: 19px; font-weight: 500; }
 
 .notice { background: #eeeee7; border-radius: 8px; padding: 13px 18px; color: #666f63; font-size: 12px; }
