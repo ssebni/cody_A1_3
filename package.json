@@ -1,0 +1,14 @@
+{
+  "name": "naechinso-test-tools",
+  "private": true,
+  "scripts": {
+    "test:db": "node tests/db.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@supabase/supabase-js": "^2.57.4",
+    "esbuild": "^0.28.2",
+    "playwright": "^1.63.0"
+  }
+}

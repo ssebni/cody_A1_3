@@ -1,0 +1,11 @@
+.venv
+.venv-win
+.env
+.env.*
+.git
+.pytest_cache
+test-results
+tests
+docs
+node_modules
+uvicorn.*.log
