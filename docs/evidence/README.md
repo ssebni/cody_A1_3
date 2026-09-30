@@ -10,5 +10,7 @@
 | mobile-profiles-mock.png | 390px, 테스트 프로필을 주입한 화면 | 모의 데이터 UI 검증 |
 | ai-ui-mock.png | 모의 AI 응답을 주입한 화면, 이미지에 모의 응답 표기 | **실제 AI 증빙 아님** |
 | ai-production.png | `introducemyfriend.vercel.app`에서 Gemini 소개글을 생성한 화면 | **실제 AI 동작 제출 증빙** |
+| desktop-production-home.png | 주소창이 보이는 프로덕션 데스크톱 홈 화면 | **최종 데스크톱 제출 증빙** |
+| mobile-production-home.png | 주소창이 보이는 프로덕션 모바일 홈 화면 | **최종 모바일·반응형 제출 증빙** |
 
-프로덕션 URL은 `https://introducemyfriend.vercel.app`이며 공개 접속과 실제 AI 생성을 확인했습니다. 제출 전 주소창이 보이는 최종 데스크톱·모바일 화면을 추가해야 합니다. 모의 캡처는 실제 AI 성공의 증거로 사용하지 마세요.
+프로덕션 URL은 `https://introducemyfriend.vercel.app`이며 공개 접속, 데스크톱·모바일 반응형 화면, 실제 AI 생성을 확인했습니다. 서비스 화면 증빙 1세트가 준비되었습니다. 모의 캡처는 실제 AI 성공의 증거로 사용하지 마세요.

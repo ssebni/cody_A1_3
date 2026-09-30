@@ -116,7 +116,7 @@ npm run test:browser
 - [서비스 기획서](docs/service-plan.md)
 - [데이터·API 설계](docs/data-design.md)
 - [설정과 배포 안내](docs/setup-and-deploy.md)
-- [스크린샷 설명](docs/evidence/README.md): 로컬 UI 캡처와 배포 환경의 **실제 AI 생성** 화면
+- [스크린샷 설명](docs/evidence/README.md): 배포 환경의 데스크톱·모바일 화면과 **실제 AI 생성** 화면
 - [AI 코딩 도구 사용 기록](docs/ai-coding-log.md): 실제 작업 요약. 이 대화의 공유 링크 또는 스크린샷을 추가해 제출
 
-남은 제출 준비: 최종 데스크톱·모바일 화면과 원본 대화 증빙. 실제 AI 성공 화면은 `docs/evidence/ai-production.png`에 포함했습니다.
+서비스 화면 증빙은 `docs/evidence/`에 준비했습니다. 남은 제출 준비는 원본 Codex 대화 중 대표 장면 3~4장을 캡처하는 것입니다. 실제 AI 성공 화면은 `docs/evidence/ai-production.png`에 포함했습니다.
