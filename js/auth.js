@@ -1,8 +1,27 @@
-import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './config.js';
-import { api, setClient, setSession, onSession, getSession } from './session.js';
+import { api, setClient, setSession, onSession, getSession } from './session.js?v=7';
+const dependencyVersion = new URL(import.meta.url).searchParams.get('deps') || '3';
+const [{ SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY }, { createClient }] = await Promise.all([
+  import(`./config.js?v=${dependencyVersion}`),
+  import(`./vendor/supabase.js?v=${dependencyVersion}`)
+]);
 const $ = selector => document.querySelector(selector);
 let client;
 let busy = false;
+const memberPages = new Set(['home', 'explore', 'introduce', 'register', 'my']);
+function showMemberPage(loggedIn) {
+  const requested = location.hash.slice(1);
+  const page = memberPages.has(requested) ? requested : 'home';
+  document.querySelectorAll('[data-page]').forEach(section => {
+    section.hidden = !loggedIn || section.id !== page;
+  });
+  $('#member-content').hidden = !loggedIn || page === 'home';
+  document.querySelectorAll('[data-member-link]').forEach(link => {
+    const active = loggedIn && link.getAttribute('href') === `#${page}`;
+    if (active) link.setAttribute('aria-current', 'page');
+    else link.removeAttribute('aria-current');
+  });
+  if (loggedIn) window.scrollTo({ top: 0, behavior: 'auto' });
+}
 function panel(id) {
   $('#account').hidden = id !== 'account';
   $('#invite').hidden = id !== 'invite';
@@ -10,20 +29,20 @@ function panel(id) {
 }
 onSession(session => {
   const loggedIn = Boolean(session);
-  $('#member-content').hidden = !loggedIn;
+  showMemberPage(loggedIn);
   $('#site-footer').hidden = !loggedIn;
   document.querySelectorAll('[data-member-link]').forEach(link => { link.hidden = !loggedIn; });
   $('#auth-link').textContent = loggedIn ? '로그아웃' : '로그인';
   $('#auth-link').href = loggedIn ? '#home' : '#account';
-  $('#account').hidden = true;
+  $('#account').hidden = loggedIn;
   $('#invite').hidden = true;
   $('#account-info').hidden = !loggedIn;
   $('#login-form').hidden = loggedIn;
   $('#account-email').textContent = session?.user.email || '';
 });
+window.addEventListener('hashchange', () => showMemberPage(Boolean(getSession())));
 $('#show-invite').addEventListener('click', () => panel('invite'));
 $('#show-login').addEventListener('click', () => panel('account'));
-$('#hero-start').addEventListener('click', () => getSession() ? $('#explore').scrollIntoView({ behavior: 'smooth' }) : panel('account'));
 async function logout() {
   if (!client || busy) return;
   busy = true;
@@ -31,7 +50,7 @@ async function logout() {
     const { error } = await client.auth.signOut();
     if (error) throw error;
     setSession(null);
-    location.hash = 'home';
+    location.hash = 'account';
   } catch { $('#global-status').textContent = '로그아웃하지 못했습니다. 다시 시도해 주세요.'; }
   finally { busy = false; }
 }
@@ -56,7 +75,7 @@ $('#login-form').addEventListener('submit', async event => {
     const { data, error } = await client.auth.signInWithPassword({ email: $('#login-email').value.trim(), password: $('#login-password').value });
     if (error || !data.session) throw error;
     setSession(data.session);
-    location.hash = 'explore';
+    location.hash = 'home';
   } catch (error) { $('#auth-status').textContent = authError(error); }
   finally { busy = false; $('#login-submit').disabled = false; $('#login-password').value = ''; }
 });
@@ -84,7 +103,6 @@ $('#invite-form').addEventListener('submit', async event => {
 });
 async function initialize() {
   try {
-    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/+esm');
     client = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
       global: { fetch: (url, options = {}) => fetch(url, { ...options, signal: AbortSignal.timeout(15000) }) }

@@ -10,7 +10,8 @@ export function setSession(value) {
 }
 export function onSession(callback) { listeners.add(callback); callback(session); }
 export async function api(path, { body, publicRequest = false, timeout = 45000 } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const form = body instanceof FormData;
+  const headers = form ? {} : { 'Content-Type': 'application/json' };
   if (!publicRequest) {
     if (!client) throw new Error('로그인 연결을 확인해 주세요.');
     const { data, error } = await client.auth.getSession();
@@ -21,7 +22,7 @@ export async function api(path, { body, publicRequest = false, timeout = 45000 }
   const timer = setTimeout(() => controller.abort(), timeout);
   try {
     const response = await fetch(path, { method: body === undefined ? 'GET' : 'POST', headers,
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }), signal: controller.signal, cache: 'no-store' });
+      ...(body === undefined ? {} : { body: form ? body : JSON.stringify(body) }), signal: controller.signal, cache: 'no-store' });
     const result = await response.json().catch(() => { throw new Error('서버 응답을 읽지 못했습니다. 잠시 후 다시 시도해 주세요.'); });
     if (!response.ok) throw new Error(result.error?.message || '처리하지 못했습니다. 다시 시도해 주세요.');
     return result;

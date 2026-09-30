@@ -7,3 +7,5 @@
 test-results
 tests
 docs
+node_modules
+uvicorn.*.log

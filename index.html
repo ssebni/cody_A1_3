@@ -4,14 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>내친소 · 좁은 세상, 좋은 사람</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=8">
 </head>
 <body>
 <header>
   <a class="brand" href="#home">내친소<span>●</span></a>
   <nav aria-label="메인 메뉴">
+    <a href="#home" data-member-link hidden>홈</a>
     <a href="#explore" data-member-link hidden>둘러보기</a>
-    <a href="#introduce" data-member-link hidden>지인 소개</a>
+    <a href="#introduce" data-member-link hidden>AI 소개글</a>
+    <a href="#register" data-member-link hidden>지인 등록</a>
     <a id="my-link" href="#my" data-member-link hidden>마이페이지</a>
     <a id="auth-link" href="#account">로그인</a>
   </nav>
@@ -20,12 +22,12 @@
 
 <main>
   <p id="global-status" role="status" aria-live="polite"></p>
-  <section id="home" class="hero">
+  <section id="home" class="hero page-view" data-page hidden>
     <div>
       <p class="eyebrow">INTRODUCE MY FRIEND</p>
       <h1>좁은 세상,<br><em>좋은 사람</em></h1>
       <p class="lead">내 친구를 소개합니다.<br>서로의 연결성을 바탕으로 편안하게 인연을 시작하세요.</p>
-      <p class="muted">초대로 이어지고, 서로의 선택으로 가까워져요.</p><button id="hero-start" class="button" type="button">우리의 연결 시작하기 ↗</button>
+      <p class="muted">초대로 이어지고, 서로의 선택으로 가까워져요.</p><a id="hero-start" class="button" href="#register">지인 등록하기 ↗</a>
     </div>
     <div class="connection" aria-label="나, 친구, 새로운 인연으로 이어지는 초대 관계 예시">
       <span class="orbit one"></span>
@@ -38,7 +40,7 @@
     </div>
   </section>
 
-  <section id="account" class="small-panel auth-panel" hidden>
+  <section id="account" class="small-panel auth-panel">
     <p class="eyebrow">WELCOME TO OUR CIRCLE</p>
     <h2>로그인</h2>
     <p>초대로 시작한 인연, 다시 이어가세요.</p>
@@ -68,7 +70,7 @@
       <label for="invite-password">비밀번호</label>
       <input id="invite-password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required>
       <label for="invite-code">초대 코드</label>
-      <input id="invite-code" type="text" maxlength="64" placeholder="친구에게 받은 초대 코드를 입력하세요" required>
+      <input id="invite-code" type="text" minlength="5" maxlength="64" placeholder="영문·숫자 5자리 코드" autocapitalize="characters" spellcheck="false" required>
       <label class="check-label"><input id="adult-confirmed" type="checkbox" required> 만 19세 이상이며, 초대 관계와 프로필 승인 방식을 이해했습니다.</label>
       <button class="button" type="submit" id="invite-submit" disabled>가입하기</button>
     </form>
@@ -79,7 +81,7 @@
   <div id="member-content" hidden>
     <div class="notice"><strong>서로의 동의부터</strong> 당사자가 승인한 소개만 공개됩니다. <button id="refresh-data" type="button" class="text-link">새로고침</button><p id="data-status" role="status"></p></div>
 
-    <section id="explore">
+    <section id="explore" class="page-view" data-page hidden>
       <div class="section-heading">
         <div>
           <p class="eyebrow">DISCOVER YOUR CONNECTION</p>
@@ -95,7 +97,7 @@
       <div id="profiles" class="cards"></div>
     </section>
 
-    <section id="introduce" class="intro-panel">
+    <section id="introduce" class="intro-panel page-view" data-page hidden>
       <div>
         <p class="eyebrow">WORDS FROM A FRIEND</p>
         <h2>좋은 친구를 소개하는<br>말 한마디.</h2>
@@ -105,31 +107,38 @@
       <form id="intro-form">
         <label for="notes">어떤 친구인지 알려주세요</label>
         <textarea id="notes" minlength="20" maxlength="1000" required placeholder="예: 주말 러닝을 좋아하고, 약속을 잘 지키는 친구예요. 처음에는 차분하지만 친해지면 유쾌해요."></textarea>
-        <p class="muted">20~1,000자 · 실명이나 연락처는 적지 마세요.</p>
+        <p id="notes-count" class="character-count count-warning" aria-live="polite">앞뒤 공백 제외 0 / 1,000자 · 최소 20자까지 20자 남음</p>
+        <p class="muted">실명이나 연락처는 적지 마세요.</p>
         <button class="button" type="submit">AI 소개글 만들기 ↗</button>
         <p id="intro-status" role="status">AI가 만든 초안은 직접 확인하고 수정해 주세요. 하루 10회 · 요청 간격 15초.</p>
       </form>
       <div id="ai-result-panel" class="full-width" hidden>
-        <label for="ai-result">AI 소개글 초안</label><textarea id="ai-result" maxlength="2000"></textarea>
+        <label for="ai-result">AI 소개글 초안</label><textarea id="ai-result" maxlength="200"></textarea>
         <button id="use-intro" type="button" class="button">지인 소개글에 넣기</button>
       </div>
     </section>
-    <section id="register">
+    <section id="register" class="page-view" data-page hidden>
       <p class="eyebrow">INTRODUCE SOMEONE SPECIAL</p><h2>지인 프로필 준비하기</h2>
-      <p>초대 코드를 발급하고 프로필을 작성한 뒤 지인에게 코드를 전달하세요. 지인이 가입하면 직접 내용을 확인하고 공개할 수 있어요.</p>
+      <p>초대할 지인이나 이미 가입한 지인을 선택해 소개를 작성하세요. 지인이 직접 내용을 확인하고 승인해야 공개됩니다.</p>
       <form id="profile-form" class="small-panel form-grid">
         <input id="profile-id" type="hidden">
         <div class="full-width"><label for="profile-invitation">연결할 초대</label><select id="profile-invitation" required><option value="">맺어주기에서 초대 코드를 먼저 발급하세요</option></select></div>
-        <div><label for="profile-nickname">지인의 별명</label><input id="profile-nickname" maxlength="40" required></div>
-        <div><label for="profile-age">연령대</label><select id="profile-age" required><option value="">선택</option><option>20대 초반</option><option>20대 중반</option><option>20대 후반</option><option>30대 초반</option><option>30대 중반</option><option>30대 후반</option><option>40대 이상</option></select></div>
-        <div><label for="profile-region">활동 지역</label><input id="profile-region" maxlength="80" placeholder="예: 서울" required></div>
+        <div><label for="profile-name">본명</label><input id="profile-name" maxlength="40" autocomplete="off" required></div>
+        <div><label for="profile-birth">출생년월</label><input id="profile-birth" type="month" required><p id="profile-age-display" class="field-note">출생년월을 입력하면 나이가 계산됩니다.</p></div>
+        <div><label for="profile-hometown">고향 <span class="muted">선택</span></label><input id="profile-hometown" maxlength="80" placeholder="예: 부산"></div>
+        <div><label for="profile-region">현재 거주지</label><input id="profile-region" maxlength="80" placeholder="예: 서울 마포구" required></div>
         <div><label for="profile-hobbies">취미 (쉼표로 구분)</label><input id="profile-hobbies" maxlength="309" placeholder="산책, 독립서점, 커피"></div>
-        <div class="full-width"><label for="profile-introduction">소개글</label><textarea id="profile-introduction" minlength="20" maxlength="2000" required></textarea><p class="muted">20~2,000자 · 연락처와 실명은 넣지 마세요. 수정하면 공개가 해제되고 다시 승인이 필요해요.</p></div>
+        <div><label for="profile-job">직업</label><input id="profile-job" maxlength="80" placeholder="예: 브랜드 마케터" required></div>
+        <div><label for="profile-height">키 (cm)</label><input id="profile-height" type="number" min="100" max="250" inputmode="numeric" placeholder="예: 170" required></div>
+        <div><label for="profile-religion">종교 <span class="muted">선택</span></label><input id="profile-religion" maxlength="40" placeholder="예: 무교"></div>
+        <div><label for="profile-mbti">MBTI <span class="muted">선택</span></label><select id="profile-mbti"><option value="">선택 안 함</option><option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option><option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option><option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option><option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option></select></div>
+        <div class="full-width photo-field"><label for="profile-photos">본인 사진 <span class="muted">선택 · 최대 3장</span></label><div id="profile-photo-editor" class="photo-album photo-editor" aria-live="polite"></div><input id="profile-photos" type="file" accept="image/jpeg,image/png,image/webp" multiple><p class="muted">JPG, PNG, WebP · 긴 변 최대 1600px, 약 1.5MB 이하로 자동 최적화됩니다. 사진을 고르지 않으면 빈 영역으로 유지됩니다.</p></div>
+        <div class="full-width"><label for="profile-introduction">소개글</label><textarea id="profile-introduction" maxlength="200" required></textarea><p class="muted"><span id="profile-introduction-count">0</span>/200자 · 수정하면 공개가 해제되고 다시 승인이 필요해요.</p></div>
         <div class="full-width actions"><button type="submit" class="button">프로필 저장하기</button><button id="reset-profile" type="button" class="secondary">새 프로필 작성</button></div>
         <p id="profile-status" class="full-width" role="status"></p>
       </form>
     </section>
-    <section id="my">
+    <section id="my" class="page-view" data-page hidden>
       <p class="eyebrow">MY PAGE</p>
       <h2>마이페이지</h2>
       <p class="muted">소개 &amp; 주선 대시보드</p>
@@ -149,8 +158,10 @@
         <div class="my-grid">
           <article class="small-panel"><h3>내가 소개하는 지인</h3><div id="authored-profiles"></div><a class="button" href="#register">새 지인 소개하기 ↗</a></article>
           <article class="small-panel"><h3>초대 관리</h3><p>30일 동안 유효한 1회용 코드입니다. 코드 원문은 발급 직후에만 확인할 수 있어요.</p>
+            <label for="invite-memo">초대 메모 <span class="muted">선택 · 최대 10자</span></label>
+            <input id="invite-memo" maxlength="10" placeholder="예: 대학 친구" autocomplete="off">
             <button id="issue-invite" class="button" type="button">새 초대 코드 발급</button>
-            <div id="new-invite" hidden><p><strong id="my-invite-code"></strong></p><button id="copy-invite-code" class="secondary" type="button">초대 코드 복사하기</button><p class="muted">이 지인의 프로필을 저장한 다음 코드를 전달하세요.</p></div>
+            <div id="new-invite" hidden><p><strong id="my-invite-code"></strong></p><button id="copy-invite-code" class="secondary" type="button">초대 코드 복사하기</button><p class="muted">지인에게 코드를 전달하세요. 소개는 가입 전이나 후에 작성할 수 있어요.</p></div>
             <p id="invitation-status" role="status"></p><div id="invitation-list"></div>
           </article>
         </div>
@@ -172,7 +183,22 @@
   <p class="muted">상대가 수락하면 서로의 저장된 연락 방법이 공개됩니다.</p>
 </dialog>
 
-<script type="module" src="js/app.js"></script>
-<script type="module" src="js/auth.js"></script>
+  <script type="module" src="js/app.js?v=10"></script>
+<script type="module">
+  const status = document.querySelector('#auth-status');
+  const authAttempts = ['4', `${Date.now()}-2`, `${Date.now()}-3`];
+  let authLoaded = false;
+  for (let index = 0; index < authAttempts.length; index++) {
+    try {
+      await import(`./js/auth.js?v=11&deps=${authAttempts[index]}`);
+      authLoaded = true;
+      break;
+    } catch {}
+    await new Promise(resolve => setTimeout(resolve, 400 * (index + 1)));
+  }
+  if (!authLoaded) {
+    status.textContent = '로그인 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.';
+  }
+</script>
 </body>
 </html>
