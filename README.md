@@ -2,7 +2,7 @@
 
 초대로 연결된 주선자가 지인의 소개를 작성하고, 지인이 내용을 직접 수정·검토한 뒤 공개를 승인해 인연을 찾는 서비스입니다. 한 회원이 주선자와 소개받는 역할을 모두 사용할 수 있습니다. AI는 입력한 특징으로 소개글 초안을 작성하며 자동으로 공개하지 않습니다.
 
-**배포 URL: [https://cody-a1-3-1feo.vercel.app](https://cody-a1-3-1feo.vercel.app).** 로컬 구현과 자동 테스트를 완료했고 호스팅 Supabase에는 006까지 적용했습니다. 공개 프로덕션 화면과 `/api/health` 응답을 확인했습니다.
+**배포 URL: [https://introducemyfriend.vercel.app](https://introducemyfriend.vercel.app).** 로컬 구현과 자동 테스트를 완료했고 호스팅 Supabase에는 006까지 적용했습니다. 공개 프로덕션 화면과 `/api/health` 응답을 확인했습니다.
 
 개발 브랜치: [codex/naechinso-service](https://github.com/ssebni/cody_A1_3/tree/codex/naechinso-service).
 
