@@ -2,7 +2,7 @@
 
 초대로 연결된 주선자가 지인의 소개를 작성하고, 지인이 내용을 직접 수정·검토한 뒤 공개를 승인해 인연을 찾는 서비스입니다. 한 회원이 주선자와 소개받는 역할을 모두 사용할 수 있습니다. AI는 입력한 특징으로 소개글 초안을 작성하며 자동으로 공개하지 않습니다.
 
-**배포 URL: 아직 확인되지 않음.** 로컬 구현과 자동 테스트를 완료했고 호스팅 Supabase에는 006까지 적용했습니다. 실제 AI 호출과 Vercel 배포 검증은 대기 중이므로 과제 제출 완료 상태는 아닙니다.
+**배포 URL: [https://cody-a1-3-1feo.vercel.app](https://cody-a1-3-1feo.vercel.app).** 로컬 구현과 자동 테스트를 완료했고 호스팅 Supabase에는 006까지 적용했습니다. 공개 프로덕션 화면과 `/api/health` 응답을 확인했습니다.
 
 개발 브랜치: [codex/naechinso-service](https://github.com/ssebni/cody_A1_3/tree/codex/naechinso-service).
 
@@ -94,7 +94,7 @@ AI는 회원별 UTC 하루 10회, 최소 15초 간격으로 호출합니다. 제
 5. Deploy 후 `/api/health`, 로그인, 두 테스트 회원의 공개 승인·매칭, 실제 AI 호출을 확인합니다.
 6. 실제 URL을 README에 기록하고 실제 동작 화면을 캡처합니다. 키·DB 설정을 바꿨다면 재배포합니다.
 
-설정 근거: [Vercel FastAPI 배포](https://vercel.com/docs/frameworks/backend/fastapi), [Gemini 텍스트 생성](https://ai.google.dev/gemini-api/docs/generate-content/text-generation). 배포 설정은 문서 기준으로 준비했으며 원격 배포 성공은 아직 검증하지 않았습니다.
+설정 근거: [Vercel FastAPI 배포](https://vercel.com/docs/frameworks/backend/fastapi), [Gemini 텍스트 생성](https://ai.google.dev/gemini-api/docs/generate-content/text-generation). 공개 프로덕션 화면과 `/api/health`의 `ok=true`를 확인했습니다.
 
 ## 테스트
 
@@ -119,4 +119,4 @@ npm run test:browser
 - [스크린샷 설명](docs/evidence/README.md): 로컬 화면 및 **모의 응답** UI 캡처
 - [AI 코딩 도구 사용 기록](docs/ai-coding-log.md): 실제 작업 요약. 이 대화의 공유 링크 또는 스크린샷을 추가해 제출
 
-남은 항목: 실제 배포 URL, 호스팅 환경의 전체 인증·동시성 검증, 실제 AI 성공 캡처, 원본 대화 증빙. 모의 AI 캡처를 실제 API 동작 증빙으로 제출하면 안 됩니다.
+남은 제출 준비: 배포 환경 로그인·AI 생성 확인, 실제 데스크톱·모바일·AI 성공 캡처, 원본 대화 증빙. 모의 AI 캡처를 실제 API 동작 증빙으로 제출하면 안 됩니다.
